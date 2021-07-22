@@ -11,26 +11,15 @@ class TodoViewController: UITableViewController {
 
    var itemArray = [Item] ()
    
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
      
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        print(dataFilePath!)
         
-        let newItem = Item()
-        newItem.title = "Workout"
-        itemArray.append(newItem)
-        
-        let newItem2 = Item()
-        newItem2.title = "New Item"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Third item"
-        itemArray.append(newItem3)
-        
-//        if let items =  defaults.array(forKey: "TodoListArray") as? [String] {
-//            itemArray = items
-//        }
+            
+        loadItems()
     }
 
     //MARK: - TableView DataSource
@@ -47,12 +36,9 @@ class TodoViewController: UITableViewController {
         
         cell.textLabel?.text = item.title
          
-        if item.done == true {
-            cell.accessoryType = .checkmark
-        } else {
-            cell.accessoryType = .none
-        }
+        cell.accessoryType = item.done ? .checkmark : .none
         
+                
         return cell
     }
    
@@ -62,7 +48,8 @@ class TodoViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
 
-        tableView.reloadData()
+        saveItems()
+        
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -82,9 +69,7 @@ class TodoViewController: UITableViewController {
             newItem.title = textField.text!
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
             
             
         }
@@ -95,6 +80,32 @@ class TodoViewController: UITableViewController {
         
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
+    }
+    
+    //MARK: - Model Manipulation Methods
+    
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        self.tableView.reloadData()
+    }
+    
+    
+    func loadItems() {
+        if  let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array, \(error)")
+            }
+            }
     }
     
 }
